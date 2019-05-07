@@ -1,12 +1,8 @@
-import React, { Component } from 'react';
+import React, { Component, useState } from 'react';
 import './App.css';
 
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-const MOTS_A_DECOUVRIR = [
-  'JOUER',
-  'PAPILLON',
-  'CHAISE',
-  'SOLEIL',
+const WORDS_TO_FIND = [
   'DALEK',
   'CYBERMAN',
   'SONIC SCREWDRIVER',
@@ -17,73 +13,64 @@ const MOTS_A_DECOUVRIR = [
   'BAD WOLF'
 ]
 
-class App extends Component {
-  
-  state = this.initialState()
-  
-  initialState()  {
-    return {
-      motATrouver: this.choisirMot(),
-      motMasque: '_',
-      lettresUtilisees: new Set(),
-      alphabet: ALPHABET.split(""),
-      tentatives: 0,
-      erreur: ''
-    }
+function App() {
+  const [wordToFind, setWordToFind] = useState(randomWord())
+  const [hiddenWord, setHiddenWord] = useState('_')
+  const [usedLetters, setUsedLetters] = useState(new Set())
+  const [guesses, setGuesses] = useState(0)
+  const [fail, setFail] = useState('')
+
+  function initialState()  {
+    setWordToFind(randomWord())
+    setHiddenWord('_')
+    setUsedLetters(new Set())
+    setGuesses(0)
+    setFail('')
   }
-
-  choisirMot() {
-    const idMot = Math.floor(Math.random() * MOTS_A_DECOUVRIR.length)
-    return MOTS_A_DECOUVRIR[idMot]
+  
+  function randomWord() {
+    const idMot = Math.floor(Math.random() * WORDS_TO_FIND.length)
+    return WORDS_TO_FIND[idMot]
   }
-
-  cacherLettres() {
-    const {motATrouver, lettresUtilisees} = this.state
-
-    return motATrouver.replace(/\w/g,
-      (lettre) => (lettresUtilisees.has(lettre) ? lettre : '_')
+  
+  function hiddeLetters() {
+    return wordToFind.replace(/\w/g,
+      (lettre) => (usedLetters.has(lettre) ? lettre : '_')
     )
   }
-
-  handleLetterClick = letter => {
-    const {motATrouver, lettresUtilisees, tentatives} = this.state
-    if (!motATrouver.includes(letter)) {
-      this.setState({erreur: 'erreur'})
+  
+  function handleLetterClick(letter) {
+    if (!wordToFind.includes(letter)) {
+      setFail('erreur')
       setTimeout(() => {
-        this.setState({erreur: ''})
+        setFail('')
       }, 750)
     }
-
-    this.setState({lettresUtilisees: lettresUtilisees.add(letter), motMasque: this.cacherLettres(), tentatives: tentatives + 1})
+  
+    setUsedLetters(usedLetters.add(letter))
+    setHiddenWord(hiddeLetters())
+    setGuesses(guesses + 1)
   }
 
-  rejouerPartie = () => {
-    this.setState(this.initialState)
-  }
+  return (
+    <div className="App">
+      <header className="App-header">
+        <div className={`mot-a-trouver ${fail}`}>{hiddenWord !== '_' ? hiddenWord : hiddeLetters()}</div>
+        <div className="alphabet">
+        { !hiddenWord.includes('_') ?
+        
+          <div className="victoire">
+            <button className="boutton" onClick={initialState}>rejouer</button>
+            <p>Félicitation !! Vous avez trouvé le mot caché en {guesses} tentatives!</p>
+          </div> : 
 
-  render() {
-    const {alphabet, motMasque, tentatives, erreur} = this.state
-    const gagne = !motMasque.includes('_')
-    return (
-      <div className="App">
-        <header className="App-header">
-          <div className={`mot-a-trouver ${erreur}`}>{motMasque !== '_' ? motMasque : this.cacherLettres()}</div>
-          <div className="alphabet">
-          { gagne ?
-          
-            <div className="victoire">
-              <button className="boutton" onClick={this.rejouerPartie}>rejouer</button>
-              <p>Félicitation !! Vous avez trouvé le mot caché en {tentatives} tentatives!</p>
-            </div> : 
-
-            alphabet.map((letter, index) => {
-              return <span className="letter" key={index} onClick={() => this.handleLetterClick(letter)}>{letter}</span>
-          })}
-          </div>    
-        </header>
-      </div>
-    );
-  }
+          ALPHABET.split("").map((letter, index) => {
+            return <span className="letter" key={index} onClick={() => handleLetterClick(letter)}>{letter}</span>
+        })}
+        </div>    
+      </header>
+    </div>
+  );
 }
 
 export default App;
